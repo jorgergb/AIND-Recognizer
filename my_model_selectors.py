@@ -77,7 +77,37 @@ class SelectorBIC(ModelSelector):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         # TODO implement model selection based on BIC scores
-        raise NotImplementedError
+        #best score
+        score = float('-Inf')
+        new_score=float('-Inf')
+
+        #best model
+        model = None
+
+        for num_states in range(self.min_n_components, self.max_n_components+1):
+            try:
+                new_model = self.base_model(num_states)
+                logL = new_model.score(self.X, self.lengths)
+
+                #d = data points
+                #f = features
+                d, f = self.X.shape
+                #parameters
+                p = np.square(num_states)+2*num_states*f-1
+
+                #BIC = -2 * logL + p * logN
+                bic = -2 * logL + p*np.log(d)
+
+                if bic>score:
+                    score=bic
+                    model=new_model
+            except:
+                pass
+
+
+
+
+        return model
 
 
 class SelectorDIC(ModelSelector):
@@ -94,7 +124,47 @@ class SelectorDIC(ModelSelector):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         # TODO implement model selection based on DIC scores
-        raise NotImplementedError
+
+        #best score
+        score = float('-Inf')
+        new_score=float('-Inf')
+
+        #best model
+        model = None
+
+        other_words=[]
+        l_words = []
+        #scores = []
+        #models = []
+
+        for num_states in range(self.min_n_components, self.max_n_components+1):
+            try:
+                new_model = self.base_model(num_states)
+                logL = new_model.score(self.X, self.lengths)
+
+                for word in self.words:
+                    if word != self.this_word:
+                        other_words.append(self.hwords[word])
+
+                for word in other_words:
+                    l_words.append(new_model.score(word[0],word[1]))
+
+                new_score = logL = np.mean(l_words)
+                #scores.append(new_score)
+                #models.append(new_model)
+
+
+                if new_score > score:
+                    score = new_score
+                    model = new_model
+
+
+
+            except:
+                pass
+
+
+        return model
 
 
 class SelectorCV(ModelSelector):
@@ -106,4 +176,63 @@ class SelectorCV(ModelSelector):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         # TODO implement model selection using CV
-        raise NotImplementedError
+        
+        ## CALL:
+        ## 
+        """
+        model = SelectorCV(sequences, Xlengths, word, 
+                    min_n_components=2, max_n_components=15, random_state = 14).select()
+        """
+        """
+        From documentation:
+        K-Folds cross-validator
+
+        Provides train/test indices to split data in train/test sets. Split dataset into k consecutive folds (without shuffling by default).
+
+        Each fold is then used once as a validation while the k - 1 remaining folds form the training set.
+        """
+
+        #best score
+        score = float('-Inf')
+        new_score=float('-Inf')
+
+        #best model
+        model = None
+
+        #splits -  3 by default
+
+        for num_states in range(self.min_n_components, self.max_n_components+1):
+            try:
+        
+                logL = []
+                if len(self.lengths)>2:
+                    try:
+                        seq = KFold(n_splits=3).split(self.sequences)
+                        for train_set, test_set in seq:
+                            self.X, self.lengths = combine_sequences(train_set, self.sequences)
+                            test_x, test_lengths = combine_sequences(test_set, self.sequences)
+
+                            new_model = self.base_model(num_states)
+                            logL.append(new_model.score(test_x, test_lengths))
+
+                        new_score = np.mean(logL)
+
+                        
+                    except:
+                        pass
+                else:
+                    try:
+                        new_model = self.base_model(num_states)
+                        logL.append(new_model.score(self.X, self.lengths))
+                        new_score = np.mean(logL) 
+                    except:
+                        pass
+                #check if new score is best score
+                        #update score and model if necesary
+                if new_score>score:
+                    score = new_score
+                    model = new_model
+            except :
+                pass
+
+        return model
