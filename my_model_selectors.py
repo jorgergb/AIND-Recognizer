@@ -134,8 +134,6 @@ class SelectorDIC(ModelSelector):
 
         other_words=[]
         l_words = []
-        #scores = []
-        #models = []
 
         for num_states in range(self.min_n_components, self.max_n_components+1):
             try:
