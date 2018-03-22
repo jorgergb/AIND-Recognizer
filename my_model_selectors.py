@@ -78,8 +78,8 @@ class SelectorBIC(ModelSelector):
 
         # TODO implement model selection based on BIC scores
         #best score
-        score = float('-Inf')
-        new_score=float('-Inf')
+        score = float('Inf')
+        new_score=float('Inf')
 
         #best model
         model = None
@@ -96,10 +96,10 @@ class SelectorBIC(ModelSelector):
                 p = np.square(num_states)+2*num_states*f-1
 
                 #BIC = -2 * logL + p * logN
-                bic = -2 * logL + p*np.log(d)
+                new_score = -2 * logL + p*np.log(d)
 
-                if bic>score:
-                    score=bic
+                if new_score<score:
+                    score=new_score
                     model=new_model
             except:
                 pass
@@ -147,7 +147,7 @@ class SelectorDIC(ModelSelector):
                 for word in other_words:
                     l_words.append(new_model.score(word[0],word[1]))
 
-                new_score = logL = np.mean(l_words)
+                new_score = logL - np.mean(l_words)
                 #scores.append(new_score)
                 #models.append(new_model)
 
